@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+	<meta charset="utf-8"/>
+	<title>"Szachy"</title>
+	<meta name="description" content="Jakieś losowe gry napisane w JavaScripcie"/>
+	<meta name="keywords" content="html, javascript, js, gry javascript, gry js, impostor"/>
+	<meta name="author" content="Dominik Adam"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+	
+	<link rel="stylesheet" href="style.css" type="text/css"/>
+</head>
+<body>
+	<header>
+		<div id="naglowek"><h1>Słabe gry w <span style="color:#f3fa28;">JavaScripcie</span></h1></div>
+		
+		<nav>
+			<div id="navbar">
+				<ul>
+					<li><a href="index.html">Dlaczego?</a></li>
+					<li><a href="chess.html">"Szachy"</a></li>
+					<li><a href="breakout.html">Breakout</a></li>
+				</ul>
+			</div>
+		</nav>
+	</header>
+	
+	<main>
+		<article>
+			<div>
+				</br>
+				<canvas id="canv" width="640" height="640"></canvas>
+				</br>
+				</br>
+			</div>
+		</article>
+	</main>
+
+<script type="text/javascript">
+	
+	//some initalizing stuff
+	const canvas = document.getElementById("canv");
+	const ctx = canvas.getContext("2d");
+	
+	//functions
+	function drawRectangle(x, y, w, h, color) {
+		ctx.fillStyle = color;
+		ctx.fillRect(x, y, w, h);
+	}
+	
+	function drawPiece(x, y, source) {
+		let image = document.createElement("img");
+		image.src = source;
+		
+		image.onload = function() {
+			ctx.drawImage(image, x, y); 
+		}
+		//document.body.appendChild(image);
+	}
+	
+	let r = 0;
+	let f = 0;
+	let one = 0;
+	
+	function ranksAndFilesFromOne(num) {
+		r = Math.floor(num/8);
+		f = num%8;
+	}
+	
+	//for moves() function
+	/*let rStart = 0;
+	let fStart = 0;
+	
+	function ranksAndFilesFromOne2(num) {
+		rStart = Math.floor(num/8);
+		fStart = num%8;
+	}*/
+	
+	function OneFromRanksAndFiles(r, f) {
+		one = ((r - 1)*8 + f) - 1;
+	}
+	
+	let one1 = 0;
+	
+	function OneFromRanksAndFiles2(r, f) {
+		one1 = ((r - 1)*8 + f) - 1;
+	}
+	//end of this copies
+	
+	let rankMouse = 0;
+	let fileMouse = 0;
+	
+	function mousePosToRankAndFile(x, y) {
+		rankMouse = Math.ceil(x/80);
+		fileMouse = Math.ceil(y/80);
+		
+		//console.log(rankMouse + ", " + fileMouse);
+	}
+	
+	let clicked = false;
+	let waitingForSecondClick = false;
+	
+	function getMousePosition(canvas, event) {
+        let rect = canvas.getBoundingClientRect();
+        let x = event.clientX - rect.left;
+        let y = event.clientY - rect.top;
+        /*console.log("Coordinate x: " + x, 
+                    "Coordinate y: " + y);*/
+		mousePosToRankAndFile(x, y);
+		
+		clicked = true;
+    }
+	
+	//------------------------------------------------------------
+	
+	//drawing the board
+	let light = "#ccc";
+	let dark = "#333";
+	let s = 80;
+	
+	function drawBoard() {
+		for (let rank = 1; rank < 9; rank++) {
+			for (let file = 1; file < 9; file++) {
+				let isLight = (rank + file) % 2 != 0;
+				
+				let squareColor = (isLight) ? light : dark;
+				drawRectangle(s * (rank - 1), s * (file - 1), s, s, squareColor);
+			}
+		}
+	}
+	
+	drawBoard();
+	
+	let isLegal = true;
+	let shouldBeHorse = false;
+	
+	//legal moves function
+	function moves(rankStart, fileStart, rankDestination, fileDestination, pieceType, entireBoard) {
+		isLegal = true;
+		
+		if (pieceType == 9 || pieceType == 17) { //king
+			if ((Math.abs(rankStart - rankDestination) > 1) || (Math.abs(fileStart - fileDestination) > 1)) {
+				//console.log("Not a legal move!");
+				isLegal = false;
+				return;
+			}
+			
+			OneFromRanksAndFiles2(rankDestination, fileDestination);
+			
+			if (pieceType == 9) {
+				if (entireBoard[one1] < 16 && entireBoard[one1] > 0) {
+					//console.log("Not a legal move!");
+					isLegal = false;
+					return;
+				}
+			}
+			else {
+				if (entireBoard[one1] > 16) {
+					//console.log("Not a legal move!");
+					isLegal = false;
+					return;
+				}
+			}
+		}
+		else if (pieceType == 10) { //pawn white
+			let canMoveTwo = false;
+			
+			if (rankStart == 2) {
+				canMoveTwo = true;
+			}
+			
+			if (((Math.abs(rankStart - rankDestination) > 1) || (fileStart != fileDestination)) && canMoveTwo == false) {
+				//console.log("Not a legal move! 1");
+				isLegal = false;
+			}
+			else if (((Math.abs(rankStart - rankDestination) > 2) || (fileStart != fileDestination)) && canMoveTwo == true) {
+				//console.log("Not a legal move! 2");
+				isLegal = false;
+			}
+			
+			if (rankDestination == 8 && rankStart == 7) {
+				//console.log("should become a horse!");
+				shouldBeHorse = true;
+			}
+			
+			OneFromRanksAndFiles2(rankDestination, fileDestination);
+			if (entireBoard[one1] != 0 && board[one1] != undefined) {
+				if (Math.abs(fileStart - fileDestination) == 1 && Math.abs(rankStart - rankDestination) == 1 && rankStart < rankDestination) {
+					//console.log("Wait, actually legal");
+					isLegal = true;
+				}
+				else {
+					//console.log("Not a legal move! 3");
+					isLegal = false;
+					return;
+				}
+			}
+			
+			if (entireBoard[one1] < 16 && entireBoard[one1] > 0) {
+				//console.log("Not a legal move!");
+				isLegal = false;
+				return;
+			}
+			
+			if (Math.abs(rankStart - rankDestination) == 2) { //moved two squares
+				if (board[one1 - 8] > 0) {
+					//console.log("Not a legal move! 5");
+					isLegal = false;
+					return;
+				}
+			}
+			
+			if (rankStart > rankDestination) {
+				//console.log("Not a legal move! 4");
+				isLegal = false;
+				return;
+			}
+		}
+		else if (pieceType == 18) { //pawn black
+			let canMoveTwo = false;
+			
+			if (rankStart == 7) {
+				canMoveTwo = true;
+			}
+			
+			if (((Math.abs(rankStart - rankDestination) > 1) || (fileStart != fileDestination)) && canMoveTwo == false) {
+				//console.log("Not a legal move! 1");
+				isLegal = false;
+			}
+			else if (((Math.abs(rankStart - rankDestination) > 2) || (fileStart != fileDestination)) && canMoveTwo == true) {
+				//console.log("Not a legal move! 2");
+				isLegal = false;
+			}
+			
+			if (rankDestination == 1 && rankStart == 2) {
+				//console.log("should become a horse!");
+				shouldBeHorse = true;
+			}
+			
+			OneFromRanksAndFiles2(rankDestination, fileDestination);
+			if (entireBoard[one1] != 0 && board[one1] != undefined) {
+				if (Math.abs(fileStart - fileDestination) == 1 && Math.abs(rankStart - rankDestination) == 1 && rankStart > rankDestination) {
+					//console.log("Wait, actually legal");
+					isLegal = true;
+				}
+				else {
+					//console.log("Not a legal move! 3");
+					isLegal = false;
+					return;
+				}
+			}
+			
+			if (entireBoard[one1] > 16) {
+				//console.log("Not a legal move!");
+				isLegal = false;
+				return;
+			}
+			
+			if (Math.abs(rankStart - rankDestination) == 2) { //moved two squares
+				if (board[one1 + 8] > 0) {
+					//console.log("Not a legal move! 5");
+					isLegal = false;
+					return;
+				}
+			}
+			
+			if (rankStart < rankDestination) {
+				//console.log("Not a legal move! 4");
+				isLegal = false;
+				return;
+			}
+		}
+		else if (pieceType == 11 || pieceType == 19) { //horse
+			const movesX = [2, 1, -1, -2, -2, -1, 1 , 2];
+			const movesY = [1, 2, 2, 1, -1, -2, -2, -1];
+			
+			let allFineProbably = false;
+			
+			OneFromRanksAndFiles2(rankDestination, fileDestination);
+			
+			for (let i = 0; i < 8; i++) {
+				let xPos = rankStart + movesX[i];
+				let yPos = fileStart + movesY[i];
+				
+				if (xPos == rankDestination && yPos == fileDestination) {
+					allFineProbably = true;
+					
+					if (pieceType == 11) {
+						if (entireBoard[one1] < 16 && entireBoard[one1] > 0) {
+							//console.log("Not a legal move!");
+							isLegal = false;
+							return;
+						}
+					}
+					else {
+						if (entireBoard[one1] > 16) {
+							//console.log("Not a legal move!");
+							isLegal = false;
+							return;
+						}
+					}
+				}
+			}
+			
+			if (allFineProbably == false) {
+				//console.log("Not a legal move!");
+				isLegal = false;
+				return;
+			}
+		}
+		
+		one1 = 0;
+	}
+	
+	//------------------------------------------------------------
+	
+	const ranks = [10, 90, 170, 250, 330, 410, 490, 570]; 
+	const files = [8, 88, 168, 248, 328, 408, 488, 568]; 
+
+	//------------------------------------------------------------
+
+	//listens for mouse click
+	canv.addEventListener("mousedown", function(e) {
+		getMousePosition(canv, e);
+    });
+	
+	//script's board
+	const board = new Array(64);
+	
+	//const none = 0;
+	const king = 1;
+	const pawn = 2;
+	const horse = 3;
+	const bishop = 4;
+	const rook = 5;
+	const queen = 6;
+	
+	const white = 8;
+	const black = 16;
+	
+	//fen sting stuff
+	const fenStart = "1N2K1N1PPPPPPPP8888pppppppp1n2k1n"; //technically not fen string | const fenStart = "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr";
+	
+	convertFen(fenStart);
+	
+	function convertFen(fen) {
+		const chars = [...fen];
+		let square = 0;
+		
+		for (let i = 0; i < fen.length; i++) {
+			switch(chars[i]) {
+				case 'r':
+					board[square] = black | rook;
+					break;
+				case 'n':
+					board[square] = black | horse;
+					break;
+				case 'b':
+					board[square] = black | bishop;
+					break;
+				case 'q':
+					board[square] = black | queen;
+					break;
+				case 'k':
+					board[square] = black | king;
+					break;
+				case 'p':
+					board[square] = black | pawn;
+					break;
+				case 'R':
+					board[square] = white | rook;
+					break;
+				case 'N':
+					board[square] = white | horse;
+					break;
+				case 'B':
+					board[square] = white | bishop;
+					break;
+				case 'Q':
+					board[square] = white | queen;
+					break;
+				case 'K':
+					board[square] = white | king;
+					break;
+				case 'P':
+					board[square] = white | pawn;
+					break;
+				default:
+					let spacesSkipped = parseInt(chars[i]);
+					square+=spacesSkipped - 1;
+			}
+			square++;
+		}
+	}
+	
+	for (let i = 0; i < 64; i++) {	
+		if (board[i] != undefined && board[i] != 0) {
+			ranksAndFilesFromOne(i);
+			drawPiece(ranks[r], files[f], "img/" + board[i] + ".png");
+		}
+			
+		r = 0; f = 0;
+	}
+	
+	//------------------------------------------------------------
+	//TODO: 
+	
+	let selectedPiece = 0;
+	let pieceToRemoveFromPreviousSpot = 0;
+	
+	let whiteToMove = true;
+	
+	//other function
+	let xImgPre = 0;
+	let yImgPre = 0;
+	
+	function updateBoard() {
+		
+		let xImg = xImgPre*80-80;
+		let yImg = yImgPre*80-80;
+		
+		//------------------------------------------------------------
+		
+		moves(xImgPre, yImgPre, rankMouse, fileMouse, selectedPiece, board);
+		//console.log(xImgPre + ", " + yImgPre + ", " + rankMouse + ", " + fileMouse);
+		
+		//------------------------------------------------------------
+		
+		if (isLegal && shouldBeHorse == false) {
+			ctx.clearRect(xImg, yImg, 80, 80);
+		
+			let isLight = (xImgPre + yImgPre) % 2 != 0;
+			let squareColor = (isLight) ? light : dark;
+			
+			drawRectangle(xImg, yImg, 80, 80, squareColor);
+			//console.log(xImg + ", " + yImg);
+			
+			//again... (this time for destination square, to avoid stacking pieces)
+			ctx.clearRect(rankMouse*80-80, fileMouse*80-80, 80, 80);
+			
+			let isLight2 = (rankMouse + fileMouse) % 2 != 0;
+			let squareColor2 = (isLight2) ? light : dark;
+			
+			drawRectangle(rankMouse*80-80, fileMouse*80-80, 80, 80, squareColor2);
+			
+			//
+			ranksAndFilesFromOne(one);
+			
+			drawPiece(ranks[r], files[f], "img/" + selectedPiece + ".png");
+			
+			r = 0; f = 0;
+		}
+	}
+	
+	function updateBoardPawnToHorse(which) {
+		
+		if (isLegal) {
+			let xImg = xImgPre*80-80;
+			let yImg = yImgPre*80-80;
+			
+			ctx.clearRect(xImg, yImg, 80, 80);
+			
+			let isLight = (xImgPre + yImgPre) % 2 != 0;
+			let squareColor = (isLight) ? light : dark;
+			
+			drawRectangle(xImg, yImg, 80, 80, squareColor);
+			console.log(rankMouse + ", " + fileMouse);
+			
+			//again... (this time for destination square, to avoid stacking pieces)
+			ctx.clearRect(rankMouse*80-80, fileMouse*80-80, 80, 80);
+			
+			let isLight2 = (rankMouse + fileMouse) % 2 != 0;
+			let squareColor2 = (isLight2) ? light : dark;
+			
+			drawRectangle(rankMouse*80-80, fileMouse*80-80, 80, 80, squareColor2);
+			
+			//
+			ranksAndFilesFromOne(one);
+			
+			drawPiece(ranks[r], files[f], "img/" + which + ".png");
+			
+			r = 0; f = 0;
+		}
+	}
+	
+	//logic
+	function game() {
+		if (clicked == true && waitingForSecondClick == false) {
+			OneFromRanksAndFiles(rankMouse, fileMouse);
+			
+			selectedPiece = board[one];
+			pieceToRemoveFromPreviousSpot = one;
+			//console.log(one);
+			//console.log(selectedPiece);
+			
+			xImgPre = rankMouse;
+			yImgPre = fileMouse;
+			
+			one = 0;
+			clicked = false;
+			waitingForSecondClick = true;
+		}
+		
+		if (clicked == true && waitingForSecondClick == true) {
+			OneFromRanksAndFiles(rankMouse, fileMouse);
+			
+			if (whiteToMove == true && selectedPiece < 16) {
+				updateBoard();
+				
+				if (isLegal) {
+					board[pieceToRemoveFromPreviousSpot] = 0;
+					board[one] = selectedPiece;
+					
+					if (shouldBeHorse == true) {
+						board[one] = 11;
+						updateBoardPawnToHorse(11);
+						
+						shouldBeHorse = false;
+					}
+				
+					whiteToMove = false;
+				}
+				
+				//ctx.clearRect(0, 0, 640, 640);
+				//drawBoard();
+			}
+			else if (whiteToMove == false && selectedPiece > 16) {
+				updateBoard();
+				
+				if (isLegal) {
+					board[pieceToRemoveFromPreviousSpot] = 0;
+					board[one] = selectedPiece;
+					
+					if (shouldBeHorse == true) {
+						board[one] = 19;
+						updateBoardPawnToHorse(19);
+						
+						shouldBeHorse = false;
+					}
+				
+					whiteToMove = true;
+				}
+			}
+			
+			selectedPiece = 0;
+			pieceToRemoveFromPreviousSpot = 0;
+			waitingForSecondClick = false;
+			clicked = false;
+		}
+	}
+	
+	//console.log(board);
+	
+	const frames = 5;
+	setInterval(game, 1000/frames);
+</script>
+</body>
+</html>

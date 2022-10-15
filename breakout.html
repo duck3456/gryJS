@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+	<meta charset="utf-8"/>
+	<title>Strona główna</title>
+	<meta name="description" content="Jakieś losowe gry napisane w JavaScripcie"/>
+	<meta name="keywords" content="html, javascript, js, gry javascript, gry js, impostor"/>
+	<meta name="author" content="Dominik Adam"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+	
+	<link rel="stylesheet" href="style.css" type="text/css"/>
+  </head>
+  <body>
+		<header>
+			<div id="naglowek"><h1>Słabe gry w <span style="color:#f3fa28;">JavaScripcie</span></h1></div>
+			
+			<nav>
+				<div id="navbar">
+					<ul>
+						<li><a href="index.html">Dlaczego?</a></li>
+						<li><a href="chess.html">"Szachy"</a></li>
+						<li><a href="breakout.html">Breakout</a></li>
+					</ul>
+				</div>
+			</nav>
+		</header>
+		
+		<main>
+			<article>
+				<div>
+					</br>
+					<canvas id="canv" width="700" height="500"></canvas>
+					</br>
+					</br>
+				</div>
+			</article>
+		</main>
+		
+		<script type="text/javascript">
+			const canvas = document.getElementById("canv");
+			const ctx = canvas.getContext("2d");
+
+			//zmienne
+			let score = 0;
+
+			//objekty
+			const block = {
+				x: 300,
+				y: 400,
+				width: 100,
+				height: 20,
+				color: "#000"
+			}
+
+			const ball = {
+				x: 350,
+				y: 250,
+				r: 10,
+				color: "#fff",
+				speedY: 5,
+				speedX: 0
+			}
+
+			const smallBlock = {
+				width: 50,
+				height: 50,
+				color: "#00ff00"
+			}
+
+			const smallBlocksX = [25, 85, 145, 205, 265, 325, 385, 445, 505, 565, 625, 25, 85, 145, 205, 265, 325, 385, 445, 505, 565, 625, 25, 85, 145, 205, 265, 325, 385, 445, 505, 565, 625];
+			const smallBlocksY = [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170];
+
+			let impostorX = Math.floor(Math.random() * smallBlocksX.length);
+			let impostorY = Math.floor(Math.random() * smallBlocksY.length);
+
+			let impostorFinalPosX = smallBlocksX[impostorX];
+			let impostorFinalPosY = smallBlocksY[impostorY];
+
+			//funkcje
+			function simpleCollisionDetection(Xa, Ya, Wa, Ha, Xb, Yb, Wb, Hb) {
+				if (Xa < Xb + Wb  && Xa + Wa  > Xb && Ya < Yb + Hb && Ya + Ha > Yb) {
+					return true;
+				}
+			}
+
+			function drawRectangle(x, y, w, h, color) {
+				ctx.fillStyle = color;
+				ctx.fillRect(x, y, w, h);
+			}
+
+			function drawCircle(x, y, r, color) {
+				ctx.fillStyle = color;
+				ctx.beginPath();
+				ctx.arc(x, y, r, 0, Math.PI * 2, false);
+				ctx.closePath();
+				ctx.fill();
+			}
+
+			function drawText(text, x, y, color) {
+				ctx.fillStyle = color;
+				ctx.font = "30px italic";
+				ctx.fillText(text, x, y);
+			}
+
+			function mouseMove() {
+				block.x = event.clientX - ((window.screen.width -  canvas.width)/2);
+			}
+
+			//start
+			drawRectangle(0, 0, 700, 500, "#555"); //tło
+
+			function render() {
+				drawRectangle(0, 0, 700, 500, "#555"); //restart tła
+				drawRectangle(block.x, block.y, block.width, block.height, block.color); //blok główny
+				drawCircle(ball.x, ball.y, ball.r, ball.color);
+				
+				drawRectangle(impostorFinalPosX, impostorFinalPosY, smallBlock.width, smallBlock.height, "#ff0000");
+				
+				for (let i = 0; i < smallBlocksX.length; i++) {
+					drawRectangle(smallBlocksX[i], smallBlocksY[i], smallBlock.width, smallBlock.height, smallBlock.color);
+				}
+				
+				drawText("Wynik: " + score.toString(), 20, 30, "#00ffff");
+			}
+
+			//mouse events
+			function update() {
+				canvas.addEventListener("mousemove", mouseMove);
+				
+				ball.y += ball.speedY;
+				ball.x += ball.speedX;
+				
+				if (simpleCollisionDetection(block.x, block.y, block. width + 10, block.height + 10, ball.x, ball.y, ball.r, ball.r)) {
+					ball.speedY = -ball.speedY;
+					ball.speedX = (ball.x - block.x - (block.width)/2)/10
+				}
+				
+				if (ball.y < 10) {
+					ball.speedY = -ball.speedY;
+				}
+				
+				if (ball.x < 10 || ball.x > 690) {
+					ball.speedX = -ball.speedX;
+				}
+				
+				if (ball.y > 600) {
+					ball.x = 350;
+					ball.y = 250;
+					ball.speedX = 0;
+					ball.speedY = 5;
+					drawCircle(ball.x, ball.y, ball.r, ball.color);
+					score -=5;
+				}
+				
+				for (let i = 0; i < smallBlocksX.length; i++) {
+					if (simpleCollisionDetection(smallBlocksX[i], smallBlocksY[i], smallBlock.width + 10, smallBlock.height + 10, ball.x, ball.y, ball.r, ball.r)) {
+						smallBlocksX.splice(i, 1);
+						smallBlocksY.splice(i, 1);
+						
+						ball.speedY = -ball.speedY;
+						ball.speedX = -ball.speedX;
+						
+						console.log(ball.speedX, ball.speedY);
+						score++;
+					}
+				}
+				
+				if (simpleCollisionDetection(impostorFinalPosX, impostorFinalPosY, smallBlock.width - 10, smallBlock.height - 10, ball.x, ball.y, ball.r, ball.r)) {
+					ball.speedY = -ball.speedY;
+					ball.speedX = -ball.speedX;
+					
+					console.log(ball.speedX, ball.speedY);
+					
+					score = 0;
+				}
+			}
+
+			//gra
+			function game() {
+				update();
+				render();
+			}
+			const frames = 50;
+			setInterval(game, 1000/frames);
+		</script>
+  </body>
+</html>

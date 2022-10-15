@@ -1,0 +1,40 @@
+body {
+	background-color: #666;
+	color: #fff;
+	font-family: Courier New;
+	text-align: center;
+}
+
+h1 {
+	font-size: 38px;
+}
+
+ul > li {
+	display: inline-block;
+	font-size: 20px;
+	border: 2px dotted #000000;
+	background-color:  #5e5e5e;
+	font-weight: 900;
+	padding-top: 20px;
+	padding-bottom: 15px;
+}
+
+ul > li:hover {
+	text-decoration: underline overline dotted #fff;
+}
+
+a {
+	text-decoration: none;
+	color: #fff;
+	width: 100%;
+	height: 100%;
+	padding: 20px;
+}
+
+#container {
+	width: 670px;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #555;
+	text-align: center;
+}
