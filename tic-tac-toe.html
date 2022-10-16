@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+	<meta charset="utf-8"/>
+	<title>Kółko i krzyżyk</title>
+	<meta name="description" content="Jakieś losowe gry napisane w JavaScripcie"/>
+	<meta name="keywords" content="html, javascript, js, gry javascript, gry js, impostor"/>
+	<meta name="author" content="Dominik Adam"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+	
+	<link rel="stylesheet" href="style.css" type="text/css"/>
+</head>
+<body>
+	<header>
+		<div id="naglowek"><h1>Słabe gry w <span style="color:#f3fa28;">JavaScripcie</span></h1></div>
+		
+		<nav>
+			<div id="navbar">
+				<ul>
+					<li><a href="index.html">Dlaczego?</a></li>
+					<li><a href="chess.html">"Szachy"</a></li>
+					<li><a href="breakout.html">Breakout</a></li>
+					<li><a href="tic-tac-toe.html">Kółko i krzyżyk</a></li>
+				</ul>
+			</div>
+		</nav>
+	</header>
+	
+	<main>
+		<article>
+			<div>
+				</br>
+				<canvas id="canv" width="700" height="700"></canvas>
+				</br>
+				</br>
+			</div>
+		</article>
+	</main>
+
+<script type="text/javascript">
+	const canvas = document.getElementById("canv");
+	const ctx = canvas.getContext("2d");
+
+	//obiekty i zmienne
+	let gra = [];
+
+	const smallSquares = {
+		width: 25,
+		height: 25,
+		dark: "#888",
+		light: "#aaa"
+	}
+
+	//funkcje
+	function drawRectangle(x, y, w, h, color) {
+		ctx.fillStyle = color;
+		ctx.fillRect(x, y, w, h);
+	}
+
+	function drawCircle(x, y, r, color) {
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.arc(x, y, r, 0, Math.PI * 2, false);
+		ctx.closePath();
+		ctx.fill();
+	}
+
+	function drawImg(x, y, source) {
+		let image = document.createElement("img");
+		image.src = source;
+			
+		image.onload = function() {
+			ctx.drawImage(image, x, y);
+		}
+	}
+
+	function drawText(text, x, y, color) {
+		ctx.fillStyle = color;
+		ctx.font = "30px italic";
+		ctx.fillText(text, x, y);
+	}
+
+	function OneFromRanksAndFiles(r, f) {
+		let one = r + (f*28);
+		return one;
+	}
+
+	let rankMouse;
+	let fileMouse;
+	let oneMouse;
+
+	let clicked = false;
+	let evenTurn = false;
+	let notWon = true;
+
+	let xWin = false;
+	let oWin = false;
+
+	function mousePosToOne(x, y) {
+		rankMouse = Math.ceil(x/25);
+		fileMouse = Math.ceil(y/25);
+		
+		oneMouse = OneFromRanksAndFiles(rankMouse - 1, fileMouse - 1);
+		console.log(rankMouse + ", " + fileMouse);
+		console.log(oneMouse);
+		
+		if (notWon) {
+			clicked = true;
+		}
+	}
+
+	function getMousePosition(canvas, event) {
+		let rect = canvas.getBoundingClientRect();
+		let x = event.clientX - rect.left;
+		let y = event.clientY - rect.top;
+		
+		mousePosToOne(x, y);
+	}
+
+	canv.addEventListener("mousedown", function(e) {
+		getMousePosition(canv, e);
+	});
+
+	//start
+	for (let i = 0; i < 784; i++) {
+		gra.push(0);
+	}
+
+	function render() {
+		for (let i = 0; i < 28; i++) {
+			for (let j = 0; j < 28; j++) {
+				if (gra[OneFromRanksAndFiles(i, j)] == 0) {
+					let isLight = (i + j) % 2 != 0;
+					let squareColor = (isLight) ? smallSquares.light : smallSquares.dark;
+					
+					drawRectangle(i*25, j*25, smallSquares.width, smallSquares.height, squareColor);
+				}
+				else if (gra[OneFromRanksAndFiles(i, j)] == 1) {
+					drawImg(i*25, j*25, "x.png");
+				}
+				else if (gra[OneFromRanksAndFiles(i, j)] == 2) {
+					drawImg(i*25, j*25, "o.png");
+				}
+			}
+		}
+		
+		if (xWin) {
+			drawText("Krzyżyk wygrał!", 30, 50, "#000000");
+		} else if (oWin) {
+			drawText("Kółko wygrało!", 30, 50, "#000000");
+		}
+	}
+
+	function checkForWin() {
+		if (gra[oneMouse] == 1) {
+			if (((gra[oneMouse-1] == 1) && (gra[oneMouse-2] == 1) && (gra[oneMouse-3] == 1) && (gra[oneMouse-4] == 1)) ||
+				((gra[oneMouse-1] == 1) && (gra[oneMouse-2] == 1) && (gra[oneMouse-3] == 1) && (gra[oneMouse+1] == 1)) || 
+				((gra[oneMouse-1] == 1) && (gra[oneMouse-2] == 1) && (gra[oneMouse+1] == 1) && (gra[oneMouse+2] == 1)) || 
+				((gra[oneMouse-1] == 1) && (gra[oneMouse+1] == 1) && (gra[oneMouse+2] == 1) && (gra[oneMouse+3] == 1)) ||
+				((gra[oneMouse+1] == 1) && (gra[oneMouse+2] == 1) && (gra[oneMouse+3] == 1) && (gra[oneMouse+4] == 1)) ||
+				
+				((gra[oneMouse-28] == 1) && (gra[oneMouse-56] == 1) && (gra[oneMouse-84] == 1) && (gra[oneMouse-112] == 1)) ||
+				((gra[oneMouse-28] == 1) && (gra[oneMouse-56] == 1) && (gra[oneMouse-84] == 1) && (gra[oneMouse+28] == 1)) || 
+				((gra[oneMouse-28] == 1) && (gra[oneMouse-56] == 1) && (gra[oneMouse+28] == 1) && (gra[oneMouse+56] == 1)) || 
+				((gra[oneMouse-28] == 1) && (gra[oneMouse+28] == 1) && (gra[oneMouse+56] == 1) && (gra[oneMouse+84] == 1)) ||
+				((gra[oneMouse+28] == 1) && (gra[oneMouse+56] == 1) && (gra[oneMouse+84] == 1) && (gra[oneMouse+112] == 1)) ||
+				
+				((gra[oneMouse-29] == 1) && (gra[oneMouse-58] == 1) && (gra[oneMouse-87] == 1) && (gra[oneMouse-116] == 1)) ||
+				((gra[oneMouse-29] == 1) && (gra[oneMouse-58] == 1) && (gra[oneMouse-87] == 1) && (gra[oneMouse+29] == 1)) || 
+				((gra[oneMouse-29] == 1) && (gra[oneMouse-58] == 1) && (gra[oneMouse+29] == 1) && (gra[oneMouse+58] == 1)) || 
+				((gra[oneMouse-29] == 1) && (gra[oneMouse+29] == 1) && (gra[oneMouse+58] == 1) && (gra[oneMouse+87] == 1)) ||
+				((gra[oneMouse+29] == 1) && (gra[oneMouse+58] == 1) && (gra[oneMouse+87] == 1) && (gra[oneMouse+116] == 1)) ||
+				
+				((gra[oneMouse-27] == 1) && (gra[oneMouse-54] == 1) && (gra[oneMouse-81] == 1) && (gra[oneMouse-108] == 1)) ||
+				((gra[oneMouse-27] == 1) && (gra[oneMouse-54] == 1) && (gra[oneMouse-81] == 1) && (gra[oneMouse+27] == 1)) || 
+				((gra[oneMouse-27] == 1) && (gra[oneMouse-54] == 1) && (gra[oneMouse+27] == 1) && (gra[oneMouse+54] == 1)) || 
+				((gra[oneMouse-27] == 1) && (gra[oneMouse+27] == 1) && (gra[oneMouse+54] == 1) && (gra[oneMouse+81] == 1)) ||
+				((gra[oneMouse+27] == 1) && (gra[oneMouse+54] == 1) && (gra[oneMouse+81] == 1) && (gra[oneMouse+108] == 1))) {
+				console.log("Krzyżyk wygrał!");
+				notWon = false;
+				xWin = true;
+			}
+		} else if (gra[oneMouse] == 2) {
+			if (((gra[oneMouse-1] == 2) && (gra[oneMouse-2] == 2) && (gra[oneMouse-3] == 2) && (gra[oneMouse-4] == 2)) ||
+				((gra[oneMouse-1] == 2) && (gra[oneMouse-2] == 2) && (gra[oneMouse-3] == 2) && (gra[oneMouse+1] == 2)) || 
+				((gra[oneMouse-1] == 2) && (gra[oneMouse-2] == 2) && (gra[oneMouse+1] == 2) && (gra[oneMouse+2] == 2)) || 
+				((gra[oneMouse-1] == 2) && (gra[oneMouse+1] == 2) && (gra[oneMouse+2] == 2) && (gra[oneMouse+3] == 2)) ||
+				((gra[oneMouse+1] == 2) && (gra[oneMouse+2] == 2) && (gra[oneMouse+3] == 2) && (gra[oneMouse+4] == 2)) ||
+				
+				((gra[oneMouse-28] == 2) && (gra[oneMouse-56] == 2) && (gra[oneMouse-84] == 2) && (gra[oneMouse-112] == 2)) ||
+				((gra[oneMouse-28] == 2) && (gra[oneMouse-56] == 2) && (gra[oneMouse-84] == 2) && (gra[oneMouse+28] == 2)) || 
+				((gra[oneMouse-28] == 2) && (gra[oneMouse-56] == 2) && (gra[oneMouse+28] == 2) && (gra[oneMouse+56] == 2)) || 
+				((gra[oneMouse-28] == 2) && (gra[oneMouse+28] == 2) && (gra[oneMouse+56] == 2) && (gra[oneMouse+84] == 2)) ||
+				((gra[oneMouse+28] == 2) && (gra[oneMouse+56] == 2) && (gra[oneMouse+84] == 2) && (gra[oneMouse+112] == 2)) ||
+				
+				((gra[oneMouse-29] == 2) && (gra[oneMouse-58] == 2) && (gra[oneMouse-87] == 2) && (gra[oneMouse-116] == 2)) ||
+				((gra[oneMouse-29] == 2) && (gra[oneMouse-58] == 2) && (gra[oneMouse-87] == 2) && (gra[oneMouse+29] == 2)) || 
+				((gra[oneMouse-29] == 2) && (gra[oneMouse-58] == 2) && (gra[oneMouse+29] == 2) && (gra[oneMouse+58] == 2)) || 
+				((gra[oneMouse-29] == 2) && (gra[oneMouse+29] == 2) && (gra[oneMouse+58] == 2) && (gra[oneMouse+87] == 2)) ||
+				((gra[oneMouse+29] == 2) && (gra[oneMouse+58] == 2) && (gra[oneMouse+87] == 2) && (gra[oneMouse+116] == 2)) ||
+				
+				((gra[oneMouse-27] == 2) && (gra[oneMouse-54] == 2) && (gra[oneMouse-81] == 2) && (gra[oneMouse-108] == 2)) ||
+				((gra[oneMouse-27] == 2) && (gra[oneMouse-54] == 2) && (gra[oneMouse-81] == 2) && (gra[oneMouse+27] == 2)) || 
+				((gra[oneMouse-27] == 2) && (gra[oneMouse-54] == 2) && (gra[oneMouse+27] == 2) && (gra[oneMouse+54] == 2)) || 
+				((gra[oneMouse-27] == 2) && (gra[oneMouse+27] == 2) && (gra[oneMouse+54] == 2) && (gra[oneMouse+81] == 2)) ||
+				((gra[oneMouse+27] == 2) && (gra[oneMouse+54] == 2) && (gra[oneMouse+81] == 2) && (gra[oneMouse+108] == 2))) {
+				console.log("Kółko wygrało!");
+				notWon = false;
+				oWin = true;
+			}
+		}
+	}
+
+	function update() {
+		if (evenTurn && clicked && gra[oneMouse] == 0) {
+			evenTurn = false;
+		} else if (!evenTurn && clicked && gra[oneMouse] == 0) {
+			evenTurn = true;
+		}
+		
+		if (clicked) {
+			if (evenTurn && gra[oneMouse] == 0) {
+				gra[oneMouse] = 1;
+				checkForWin();
+				clicked = false;
+			} else if (!evenTurn && gra[oneMouse] == 0) {
+				gra[oneMouse] = 2;
+				checkForWin();
+				clicked = false;
+			}
+		}
+	}
+
+	function game() {
+		update();
+		render();
+	}
+	const frames = 50;
+	setInterval(game, 1000/frames);
+</script>
+</body>
+</html>
